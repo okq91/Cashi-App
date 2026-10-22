@@ -12,6 +12,7 @@ import com.cashi.app.domain.usecase.CreatePaymentUseCase
 import com.cashi.app.domain.usecase.GetPaymentHistoryUseCase
 import com.cashi.app.domain.usecase.SignInUseCase
 import com.cashi.app.domain.validation.PaymentValidator
+import com.cashi.app.presentation.presentationModule
 import kotlinx.serialization.json.Json
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
@@ -48,4 +49,4 @@ val domainModule = module {
     factoryOf(::CreatePaymentUseCase)
 }
 
-fun sharedModules(): List<Module> = listOf(platformModule(), coreModule, dataModule, domainModule)
+fun sharedModules(): List<Module> = listOf(platformModule(), coreModule, dataModule, domainModule, presentationModule)

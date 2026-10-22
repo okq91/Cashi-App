@@ -34,6 +34,7 @@ android {
 dependencies {
     implementation(projects.composeApp)
     implementation(projects.shared)
+    implementation(libs.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.koin.android)
 }
