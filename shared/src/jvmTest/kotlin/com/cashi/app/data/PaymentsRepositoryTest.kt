@@ -1,14 +1,16 @@
 package com.cashi.app.data
 
 import com.cashi.app.testing.TestEnv
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.shouldBe
+import com.cashi.app.testing.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.time.Instant
 
-class PaymentsRepositorySpec : FunSpec({
+class PaymentsRepositoryTest {
 
-    test("refresh publishes the history newest first") {
+    @Test
+    fun `refresh publishes the history newest first`() = runTest {
         val env = TestEnv()
         env.signIn()
         env.backend.addPayment("a", "1", "JOD", "a@a.io", null, Instant.parse("2026-10-10T10:00:00Z"))
@@ -16,17 +18,18 @@ class PaymentsRepositorySpec : FunSpec({
 
         val history = env.paymentsRepository.refresh(50)
 
-        history.map { it.id } shouldBe listOf("b", "a")
-        history.first().description shouldBe null // blank descriptions are dropped
-        env.paymentsRepository.payments.value shouldBe history
+        assertEquals(listOf("b", "a"), history.map { it.id })
+        assertNull(history.first().description) // blank descriptions are dropped
+        assertEquals(history, env.paymentsRepository.payments.value)
     }
 
-    test("refresh honours the limit") {
+    @Test
+    fun `refresh honours the limit`() = runTest {
         val env = TestEnv()
         env.signIn()
         repeat(60) { i ->
             env.backend.addPayment("p$i", "1", "JOD", "a@a.io", null, Instant.fromEpochSeconds(1_790_000_000L + i))
         }
-        env.paymentsRepository.refresh(50) shouldHaveSize 50
+        assertEquals(50, env.paymentsRepository.refresh(50).size)
     }
-})
+}

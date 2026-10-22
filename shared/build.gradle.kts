@@ -54,9 +54,8 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
         }
         jvmTest.dependencies {
-            implementation(libs.kotest.runner.junit5)
-            implementation(libs.kotest.assertions.core)
-            implementation(libs.koin.test)
+            implementation(kotlin("test-junit5"))
+            implementation(libs.junit.jupiter)
             implementation(libs.cucumber.java)
             implementation(libs.cucumber.junit.platform.engine)
             implementation(libs.junit.platform.suite)

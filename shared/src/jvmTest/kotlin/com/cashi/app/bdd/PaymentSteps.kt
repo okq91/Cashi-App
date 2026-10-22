@@ -11,14 +11,11 @@ import io.cucumber.datatable.DataTable
 import io.cucumber.java.en.Given
 import io.cucumber.java.en.Then
 import io.cucumber.java.en.When
-import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.ints.shouldBeLessThanOrEqual
-import io.kotest.matchers.maps.shouldContainExactly
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /**
@@ -54,12 +51,12 @@ class PaymentSteps {
 
     @Then("the session was refreshed {int} time(s)")
     fun sessionRefreshed(times: Int) {
-        env.backend.refreshCalls shouldBe times
+        assertEquals(times, env.backend.refreshCalls)
     }
 
     @Then("the user was signed in again automatically")
     fun signedInAgain() {
-        env.backend.loginCalls shouldBe 2
+        assertEquals(2, env.backend.loginCalls)
     }
 
     // Backend data
@@ -100,31 +97,31 @@ class PaymentSteps {
 
     @Then("the payment is accepted")
     fun paymentAccepted() {
-        createResult.shouldBeInstanceOf<CreatePaymentResult.Success>()
+        assertIs<CreatePaymentResult.Success>(createResult)
     }
 
     @Then("the payment is rejected with a {string} error {string}")
     fun paymentRejected(field: String, message: String) {
-        val invalid = createResult.shouldBeInstanceOf<CreatePaymentResult.Invalid>()
-        invalid.errors[PaymentField.valueOf(field)] shouldBe message
+        val invalid = assertIs<CreatePaymentResult.Invalid>(createResult)
+        assertEquals(message, invalid.errors[PaymentField.valueOf(field)])
     }
 
     @Then("the payment fails with a network error")
     fun paymentFailsOffline() {
-        createResult.shouldBeInstanceOf<CreatePaymentResult.Failure>().isNetworkError shouldBe true
+        assertTrue(assertIs<CreatePaymentResult.Failure>(createResult).isNetworkError)
     }
 
     @Then("no payment is sent to the backend")
     fun noPaymentSent() {
-        env.backend.paymentPosts shouldBe 0
+        assertEquals(0, env.backend.paymentPosts)
     }
 
     @Then("the backend received a payment of {string} {string} for {string}")
     fun backendReceived(amount: String, currency: String, email: String) {
         val body = env.backend.createdPaymentBodies.last()
-        (body["amount"] as JsonPrimitive).content shouldBe amount
-        (body["currency"] as JsonPrimitive).content shouldBe currency
-        (body["recipientEmail"] as JsonPrimitive).content shouldBe email
+        assertEquals(amount, (body["amount"] as JsonPrimitive).content)
+        assertEquals(currency, (body["currency"] as JsonPrimitive).content)
+        assertEquals(email, (body["recipientEmail"] as JsonPrimitive).content)
     }
 
     // Listing payments
@@ -136,44 +133,44 @@ class PaymentSteps {
 
     @Then("the history shows {int} payments")
     fun historyCount(count: Int) {
-        history shouldHaveSize count
+        assertEquals(count, history.size)
     }
 
     @Then("the transaction history is empty")
     fun historyEmpty() {
-        history.shouldBeEmpty()
+        assertTrue(history.isEmpty())
     }
 
     @Then("the payments are listed in the order {string}")
     fun historyOrder(ids: String) {
-        history.map { it.id } shouldBe ids.split(",").map { it.trim() }
+        assertEquals(ids.split(",").map { it.trim() }, history.map { it.id })
     }
 
     @Then("payment {string} shows {string} {string} to {string} described as {string}")
     fun paymentShows(id: String, amount: String, currency: String, email: String, description: String) {
         val payment = history.single { it.id == id }
-        payment.amount.toPlainString() shouldBe amount
-        payment.currency shouldBe currency
-        payment.recipientEmail shouldBe email
-        payment.description shouldBe description
+        assertEquals(amount, payment.amount.toPlainString())
+        assertEquals(currency, payment.currency)
+        assertEquals(email, payment.recipientEmail)
+        assertEquals(description, payment.description)
     }
 
     @Then("the transaction history starts with a payment of {string} {string} to {string}")
     fun historyStartsWith(amount: String, currency: String, email: String) {
         val first = history.first()
-        first.amount shouldBe Amount.parseOrNull(amount)
-        first.currency shouldBe currency
-        first.recipientEmail shouldBe email
+        assertEquals(Amount.parseOrNull(amount), first.amount)
+        assertEquals(currency, first.currency)
+        assertEquals(email, first.recipientEmail)
     }
 
     @Then("the backend was asked for at most {int} payments")
     fun askedForAtMost(limit: Int) {
         val listRequest = env.backend.requests.last { it.url.encodedPath == "/api/payments" }
-        listRequest.url.parameters["limit"]!!.toInt() shouldBeLessThanOrEqual limit
+        assertTrue(listRequest.url.parameters["limit"]!!.toInt() <= limit)
     }
 
     @Then("loading the history fails with a network error")
     fun historyFailsOffline() {
-        (historyResult!!.exceptionOrNull() as ApiException).isNetworkError shouldBe true
+        assertTrue((historyResult!!.exceptionOrNull() as ApiException).isNetworkError)
     }
 }
