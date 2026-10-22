@@ -11,7 +11,7 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
-    // The JVM target hosts the Kotest unit tests and the Cucumber BDD suite (JUnit Platform).
+    // The JVM target hosts the JUnit 5 unit tests and the Cucumber BDD suite (JUnit Platform).
     jvm()
 
     iosArm64()
