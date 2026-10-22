@@ -64,6 +64,7 @@ import com.cashi.app.ui.theme.CashiColors
 import com.cashi.app.ui.theme.CashiText
 import com.cashi.app.ui.util.CollectEffects
 import com.cashi.app.ui.util.TestTags
+import com.cashi.app.ui.util.testTagsAsResourceIds
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -235,6 +236,7 @@ private fun CurrencyPicker(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             containerColor = CashiColors.Surface,
+            modifier = Modifier.testTagsAsResourceIds(),
         ) {
             options.forEach { currency ->
                 DropdownMenuItem(

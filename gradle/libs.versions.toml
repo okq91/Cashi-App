@@ -18,6 +18,7 @@ multiplatform-settings = "1.3.0"
 cucumber = "8.0.4"
 junit-platform = "6.1.3"
 appium = "11.0.0"
+selenium = "4.50.0"
 
 [libraries]
 # Compose Multiplatform
@@ -74,6 +75,7 @@ junit-platform-suite = { module = "org.junit.platform:junit-platform-suite", ver
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-platform" }
 appium-java-client = { module = "io.appium:java-client", version.ref = "appium" }
+selenium-support = { module = "org.seleniumhq.selenium:selenium-support", version.ref = "selenium" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
