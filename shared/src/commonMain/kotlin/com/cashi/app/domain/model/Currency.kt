@@ -3,7 +3,10 @@ package com.cashi.app.domain.model
 /** Currencies the app lets the user send (the mockup's currency picker). */
 enum class Currency(val code: String, val displayName: String, val symbol: String) {
     JOD("JOD", "Jordanian Dinar", "JD"),
-    USD("USD", "US Dollar", "$");
+    USD("USD", "US Dollar", "$"),
+    EUR("EUR", "Euro", "€"),
+    AED("AED", "UAE Dirham", "AED"),
+    EGP("EGP", "Egyptian Pound", "E£");
 
     companion object {
         val Default = JOD

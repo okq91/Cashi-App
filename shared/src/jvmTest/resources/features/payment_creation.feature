@@ -29,7 +29,7 @@ Feature: Payment creation
       | -5     | JOD      | ahmad@gmail.com |             | AMOUNT          | Amount must be greater than zero |
       | 10.999 | USD      | ahmad@gmail.com |             | AMOUNT          | Up to 2 decimal places           |
       | ten    | USD      | ahmad@gmail.com |             | AMOUNT          | Enter a valid amount             |
-      | 10     | EUR      | ahmad@gmail.com |             | CURRENCY        | Choose a supported currency      |
+      | 10     | GBP      | ahmad@gmail.com |             | CURRENCY        | Choose a supported currency      |
       | 10     | USD      |                 |             | RECIPIENT_EMAIL | Recipient email is required      |
       | 10     | USD      | ahmad@          |             | RECIPIENT_EMAIL | Enter a valid email address      |
 

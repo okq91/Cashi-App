@@ -1,7 +1,7 @@
 package com.cashi.app.domain.usecase
 
-import com.cashi.app.core.network.ApiException
-import com.cashi.app.data.repository.PaymentsRepository
+import com.cashi.app.domain.error.ApiException
+import com.cashi.app.domain.repository.PaymentsRepository
 import com.cashi.app.domain.model.Payment
 import com.cashi.app.domain.validation.PaymentDraft
 import com.cashi.app.domain.validation.PaymentField

@@ -28,6 +28,10 @@ object CashiColors {
     val SuccessText = Color(0xFF17652F)
     val Error = Color(0xFFC62828)
     val Skeleton = Color(0xFFE6E8EC)
+    val BadgePurpleBackground = Color(0xFFF0EAF8)
+    val BadgeGoldBackground = Color(0xFFFEF3D7)
+    val BadgeGoldForeground = Color(0xFF7A4F00)
+    val RecipientBackground = Color(0xFFF6F3FB)
 }
 
 /** Text styles taken from the mockup (Manrope there; the platform sans-serif here). */

@@ -21,7 +21,9 @@ import com.cashi.app.presentation.app.AppState
 import com.cashi.app.ui.components.PrimaryButton
 import com.cashi.app.ui.theme.CashiColors
 import com.cashi.app.ui.theme.CashiText
+import com.cashi.app.ui.theme.CashiTheme
 import com.cashi.app.ui.util.TestTags
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** Shown while the app signs in silently on launch, or when that sign-in failed. */
 @Composable
@@ -51,3 +53,11 @@ fun SplashScreen(state: AppState, onRetry: () -> Unit) {
         }
     }
 }
+
+@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Composable
+private fun SplashLoadingPreview() = CashiTheme { SplashScreen(AppState(), onRetry = {}) }
+
+@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Composable
+private fun SplashErrorPreview() = CashiTheme { SplashScreen(AppState(isSigningIn = false, error = "No internet connection"), onRetry = {}) }

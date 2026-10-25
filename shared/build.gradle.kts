@@ -30,6 +30,7 @@ kotlin {
             api(libs.kotlinx.serialization.json)
             api(libs.kotlinx.datetime)
             api(libs.androidx.lifecycle.viewmodel)
+            api(libs.androidx.paging.common)
             api(libs.koin.core)
             api(libs.koin.core.viewmodel)
             api(libs.ktor.client.core)
@@ -56,6 +57,9 @@ kotlin {
         jvmTest.dependencies {
             implementation(kotlin("test-junit5"))
             implementation(libs.junit.jupiter)
+            implementation(libs.mockito.core)
+            implementation(libs.mockito.kotlin)
+            implementation(libs.androidx.paging.testing)
             implementation(libs.cucumber.java)
             implementation(libs.cucumber.junit.platform.engine)
             implementation(libs.junit.platform.suite)

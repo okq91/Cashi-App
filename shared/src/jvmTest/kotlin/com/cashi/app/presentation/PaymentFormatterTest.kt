@@ -2,10 +2,10 @@ package com.cashi.app.presentation
 
 import com.cashi.app.domain.model.Amount
 import com.cashi.app.testing.testFormatter
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import kotlin.time.Instant
 
 class PaymentFormatterTest {
@@ -35,6 +35,6 @@ class PaymentFormatterTest {
         assertEquals("1,245.50", formatter.amount(Amount(124550)))
         assertEquals("$320.00", formatter.amountWithSymbol(Amount(32000), "USD"))
         assertEquals("JD 42.75", formatter.amountWithSymbol(Amount(4275), "JOD"))
-        assertEquals("12.00 EUR", formatter.amountWithSymbol(Amount(1200), "EUR"))
+        assertEquals("12.00 GBP", formatter.amountWithSymbol(Amount(1200), "GBP"))
     }
 }

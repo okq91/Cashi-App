@@ -1,32 +1,41 @@
 package com.cashi.app.presentation
 
+import com.cashi.app.domain.model.Amount
 import com.cashi.app.domain.model.Currency
+import com.cashi.app.domain.model.Payment
+import com.cashi.app.domain.usecase.CreatePaymentResult
+import com.cashi.app.domain.usecase.CreatePaymentUseCase
+import com.cashi.app.domain.validation.PaymentDraft
 import com.cashi.app.domain.validation.PaymentField
 import com.cashi.app.domain.validation.PaymentValidator
 import com.cashi.app.presentation.addpayment.AddPaymentEffect
 import com.cashi.app.presentation.addpayment.AddPaymentIntent
 import com.cashi.app.presentation.addpayment.AddPaymentViewModel
 import com.cashi.app.testing.MainDispatcherExtension
-import com.cashi.app.testing.TestEnv
-import com.cashi.app.testing.awaitState
 import com.cashi.app.testing.runTest
 import com.cashi.app.testing.testFormatter
 import kotlinx.coroutines.flow.first
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.extension.ExtendWith
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
+import kotlin.time.Instant
 
 @ExtendWith(MainDispatcherExtension::class)
 class AddPaymentViewModelTest {
-    private val env = TestEnv()
+    private val createPayment = mock<CreatePaymentUseCase>()
 
-    private suspend fun viewModel(): AddPaymentViewModel {
-        env.signIn()
-        return AddPaymentViewModel(env.createPayment, PaymentValidator(), testFormatter())
-    }
+    private fun viewModel() = AddPaymentViewModel(createPayment, PaymentValidator(), testFormatter())
+
+    private fun payment(email: String = "ahmad@gmail.com") =
+        Payment("p1", Amount(3000), "USD", email, "Money transfer", Instant.parse("2026-10-22T20:00:00Z"))
 
     private fun AddPaymentViewModel.fill(email: String, amount: String, currency: Currency = Currency.USD, description: String = "") {
         onIntent(AddPaymentIntent.RecipientEmailChanged(email))
@@ -36,7 +45,7 @@ class AddPaymentViewModelTest {
     }
 
     @Test
-    fun `starts empty with JOD selected, as in the mockup`() = runTest {
+    fun `starts empty with JOD selected, as in the mockup`() {
         with(viewModel().state.value) {
             assertEquals(Currency.JOD, currency)
             assertEquals("", amount)
@@ -65,7 +74,7 @@ class AddPaymentViewModelTest {
             ),
             vm.state.value.errors,
         )
-        assertEquals(0, env.backend.paymentPosts)
+        verifyNoInteractions(createPayment)
     }
 
     @Test
@@ -81,6 +90,7 @@ class AddPaymentViewModelTest {
 
     @Test
     fun `a valid payment is sent and reported`() = runTest {
+        whenever(createPayment(any())).thenReturn(CreatePaymentResult.Success(payment()))
         val vm = viewModel()
         vm.fill("ahmad@gmail.com", "30", Currency.USD, "Money transfer")
 
@@ -88,35 +98,36 @@ class AddPaymentViewModelTest {
 
         assertEquals(AddPaymentEffect.PaymentSent("Sent $30.00 to ahmad@gmail.com"), vm.effects.first())
         assertFalse(vm.state.value.isSending)
-        assertEquals("ahmad@gmail.com", env.backend.payments.single().recipientEmail)
+        verify(createPayment)(PaymentDraft("ahmad@gmail.com", "30", "USD", "Money transfer"))
     }
 
     @Test
     fun `backend validation errors land on the matching field`() = runTest {
+        val rejected = CreatePaymentResult.Invalid(
+            mapOf(PaymentField.RECIPIENT_EMAIL to "Recipient cannot receive payments"),
+            "Validation failed",
+        )
+        whenever(createPayment(any())).thenReturn(rejected)
         val vm = viewModel()
-        env.backend.rejectedRecipients["blocked@example.com"] = "Recipient cannot receive payments"
         vm.fill("blocked@example.com", "5")
 
         vm.onIntent(AddPaymentIntent.Send)
 
-        assertEquals(
-            mapOf(PaymentField.RECIPIENT_EMAIL to "Recipient cannot receive payments"),
-            vm.state.awaitState { it.errors.isNotEmpty() }.errors,
-        )
+        assertEquals(mapOf(PaymentField.RECIPIENT_EMAIL to "Recipient cannot receive payments"), vm.state.value.errors)
+        assertFalse(vm.state.value.isSending)
     }
 
     @Test
     fun `network failures are reported as a message`() = runTest {
+        val message = "Unable to reach the server. Check your connection and try again."
+        whenever(createPayment(any())).thenReturn(CreatePaymentResult.Failure(message, isNetworkError = true))
         val vm = viewModel()
         vm.fill("ahmad@gmail.com", "30")
-        env.backend.unreachable = true
 
         vm.onIntent(AddPaymentIntent.Send)
 
-        assertEquals(
-            "Unable to reach the server. Check your connection and try again.",
-            assertIs<AddPaymentEffect.ShowError>(vm.effects.first()).message,
-        )
+        assertEquals(message, assertInstanceOf<AddPaymentEffect.ShowError>(vm.effects.first()).message)
+        assertFalse(vm.state.value.isSending)
     }
 
     @Test

@@ -10,10 +10,10 @@ import com.cashi.app.domain.validation.PaymentValidation
 import com.cashi.app.domain.validation.PaymentValidator
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNull
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNull
 
 class PaymentValidatorTest {
     private val validator = PaymentValidator()
@@ -30,7 +30,7 @@ class PaymentValidatorTest {
     @Test
     fun `a blank description is omitted`() {
         val result = validator.validate(PaymentDraft("a@b.co", "1", "JOD", "   "))
-        assertNull(assertIs<PaymentValidation.Valid>(result).payment.description)
+        assertNull(assertInstanceOf<PaymentValidation.Valid>(result).payment.description)
     }
 
     @Test
@@ -42,7 +42,7 @@ class PaymentValidatorTest {
                 PaymentField.AMOUNT to PaymentError.AMOUNT_REQUIRED,
                 PaymentField.CURRENCY to PaymentError.CURRENCY_UNSUPPORTED,
             ),
-            assertIs<PaymentValidation.Invalid>(result).errors,
+            assertInstanceOf<PaymentValidation.Invalid>(result).errors,
         )
     }
 
@@ -100,7 +100,7 @@ class PaymentValidatorTest {
 
     @Test
     fun `other currencies are rejected`() {
-        assertEquals(PaymentError.CURRENCY_UNSUPPORTED, validator.currencyError("EUR"))
+        assertEquals(PaymentError.CURRENCY_UNSUPPORTED, validator.currencyError("GBP"))
         assertEquals(PaymentError.CURRENCY_UNSUPPORTED, validator.currencyError(""))
     }
 

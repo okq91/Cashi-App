@@ -1,13 +1,15 @@
 package com.cashi.app.di
 
+import com.cashi.app.core.network.AppConfig
 import com.cashi.app.core.network.createApiClient
 import com.cashi.app.core.network.createHttpEngine
 import com.cashi.app.core.storage.TokenStorage
 import com.cashi.app.data.remote.AuthApi
 import com.cashi.app.data.remote.PaymentsApi
-import com.cashi.app.data.repository.AuthRepository
-import com.cashi.app.data.repository.PaymentsRepository
+import com.cashi.app.data.repository.AuthRepositoryImpl
 import com.cashi.app.data.repository.PaymentsRepositoryImpl
+import com.cashi.app.domain.repository.AuthRepository
+import com.cashi.app.domain.repository.PaymentsRepository
 import com.cashi.app.domain.usecase.CreatePaymentUseCase
 import com.cashi.app.domain.usecase.GetPaymentHistoryUseCase
 import com.cashi.app.domain.usecase.SignInUseCase
@@ -38,13 +40,13 @@ val coreModule = module {
 val dataModule = module {
     singleOf(::AuthApi)
     singleOf(::PaymentsApi)
-    singleOf(::AuthRepository)
+    singleOf(::AuthRepositoryImpl) bind AuthRepository::class
     singleOf(::PaymentsRepositoryImpl) bind PaymentsRepository::class
 }
 
 val domainModule = module {
     factoryOf(::PaymentValidator)
-    factory { SignInUseCase(get()) }
+    factory { SignInUseCase(get(), AppConfig.demoCredentials) }
     factoryOf(::GetPaymentHistoryUseCase)
     factoryOf(::CreatePaymentUseCase)
 }

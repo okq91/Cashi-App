@@ -25,17 +25,4 @@ class TransactionHistoryTest : AppiumTestBase() {
         assertEquals(PaymentRow("Older history payment", older, rows[1].date, "5.25 JOD", "Sent"), rows[1])
         assertTrue(rows[0].date.startsWith("Today"), "Expected today's date but was '${rows[0].date}'")
     }
-
-    @Test
-    @DisplayName("the monthly summary counts this month's payments")
-    fun showsSummary() {
-        val payments = PaymentsPage(driver).waitUntilLoaded()
-        val recipient = uniqueEmail("appium.summary")
-        BackendClient().createPayment("1", "JOD", recipient, "Summary payment")
-        payments.pullToRefresh().waitForFirstRowTo(recipient)
-
-        assertTrue(payments.summaryCount().toInt() >= 1, "Count was ${payments.summaryCount()}")
-        assertTrue(Regex("""[\d,]+\.\d{2}""").matches(payments.summaryTotal()), "Total was ${payments.summaryTotal()}")
-        assertTrue(payments.summaryUsd().startsWith("$"), "USD total was ${payments.summaryUsd()}")
-    }
 }

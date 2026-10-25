@@ -1,6 +1,6 @@
 package com.cashi.app.data
 
-import com.cashi.app.core.network.ApiException
+import com.cashi.app.domain.error.ApiException
 import com.cashi.app.core.network.createApiClient
 import com.cashi.app.core.storage.TokenStorage
 import com.cashi.app.data.remote.PaymentsApi
@@ -45,15 +45,17 @@ class ApiResponseHandlingTest {
             jsonEngine(
                 HttpStatusCode.OK,
                 """
-                [{"id":"T1X7LoBy5Vxm","amount":30,"currency":"USD","recipientEmail":"ahmad@gmail.com",
+                {"items":[{"id":"T1X7LoBy5Vxm","amount":30,"currency":"USD","recipientEmail":"ahmad@gmail.com",
                   "description":"Money transfer","createdAt":"2026-10-22T20:06:25.221845Z","extra":"ignored"},
                  {"id":"x2","amount":42.75,"currency":"JOD","recipientEmail":"b@c.io","description":null,
-                  "createdAt":"2026-10-21T08:00:00Z"}]
+                  "createdAt":"2026-10-21T08:00:00Z"}],"nextCursor":"6GNM20mSxqrT"}
                 """.trimIndent(),
             ),
         )
-        val payments = api.getPayments(50)
+        val page = api.getPayments()
+        val payments = page.items
 
+        assertEquals("6GNM20mSxqrT", page.nextCursor)
         assertEquals(2, payments.size)
         with(payments[0]) {
             assertEquals("T1X7LoBy5Vxm", id)
@@ -68,14 +70,14 @@ class ApiResponseHandlingTest {
     }
 
     @Test
-    fun `sends the limit and the bearer token when listing`() = runTest {
+    fun `sends the bearer token and no cursor for the first page`() = runTest {
         val env = TestEnv()
         assertTrue(env.signIn().isSuccess)
-        env.paymentsApi.getPayments(50)
+        env.paymentsApi.getPayments()
 
         val request = env.backend.requests.last()
         assertEquals(HttpMethod.Get, request.method)
-        assertEquals("50", request.url.parameters["limit"])
+        assertNull(request.url.parameters["cursor"])
         assertEquals("Bearer ${env.tokens.accessToken}", request.headers[HttpHeaders.Authorization])
     }
 
@@ -97,6 +99,23 @@ class ApiResponseHandlingTest {
     }
 
     @Test
+    fun `sends the cursor only when asking for a later page`() = runTest {
+        val env = TestEnv()
+        env.signIn()
+        repeat(3) { i -> env.backend.addPayment("p$i", "1", "JOD", "a@b.io", null, Instant.fromEpochSeconds(1_790_000_000L + i)) }
+        env.backend.pageSize = 2
+
+        val first = env.paymentsApi.getPayments()
+        val second = env.paymentsApi.getPayments(first.nextCursor)
+
+        val urls = env.backend.requests.filter { it.url.encodedPath == "/api/payments" }.map { it.url.parameters["cursor"] }
+        assertEquals(listOf(null, first.nextCursor), urls)
+        assertEquals(listOf("p2", "p1"), first.items.map { it.id })
+        assertEquals(listOf("p0"), second.items.map { it.id })
+        assertNull(second.nextCursor)
+    }
+
+    @Test
     fun `maps a validation error response to field errors`() = runTest {
         val api = paymentsApi(
             jsonEngine(
@@ -104,7 +123,7 @@ class ApiResponseHandlingTest {
                 """{"status":400,"message":"Validation failed","errors":{"currency":"Currency must be a 3-letter ISO code, e.g. USD"}}""",
             ),
         )
-        val error = assertFailsWith<ApiException> { api.getPayments(50) }
+        val error = assertFailsWith<ApiException> { api.getPayments() }
         assertEquals(400, error.status)
         assertEquals(mapOf("currency" to "Currency must be a 3-letter ISO code, e.g. USD"), error.fieldErrors)
     }
@@ -112,22 +131,22 @@ class ApiResponseHandlingTest {
     @Test
     fun `maps a server error with a non-JSON body`() = runTest {
         val api = paymentsApi(MockEngine { respond("upstream down", HttpStatusCode.BadGateway) })
-        val error = assertFailsWith<ApiException> { api.getPayments(50) }
+        val error = assertFailsWith<ApiException> { api.getPayments() }
         assertEquals(502, error.status)
         assertEquals("upstream down", error.message)
     }
 
     @Test
     fun `maps a malformed success body to a network error`() = runTest {
-        val api = paymentsApi(jsonEngine(HttpStatusCode.OK, """{"not":"a list"}"""))
-        assertTrue(assertFailsWith<ApiException> { api.getPayments(50) }.isNetworkError)
+        val api = paymentsApi(jsonEngine(HttpStatusCode.OK, """["not","a page"]"""))
+        assertTrue(assertFailsWith<ApiException> { api.getPayments() }.isNetworkError)
     }
 
     @Test
     fun `maps connection failures to a network error`() = runTest {
         val env = TestEnv()
         env.backend.unreachable = true
-        assertTrue(assertFailsWith<ApiException> { env.paymentsApi.getPayments(50) }.isNetworkError)
+        assertTrue(assertFailsWith<ApiException> { env.paymentsApi.getPayments() }.isNetworkError)
     }
 
     @Test
@@ -154,7 +173,7 @@ class ApiResponseHandlingTest {
         env.signIn()
         env.backend.expireAccessTokens()
 
-        assertEquals(emptyList(), env.paymentsApi.getPayments(50))
+        assertEquals(emptyList(), env.paymentsApi.getPayments().items)
 
         assertEquals(1, env.backend.refreshCalls)
         assertEquals(1, env.backend.loginCalls)
@@ -169,7 +188,7 @@ class ApiResponseHandlingTest {
         env.backend.expireAccessTokens()
         env.backend.revokeRefreshTokens()
 
-        assertEquals(emptyList(), env.paymentsApi.getPayments(50))
+        assertEquals(emptyList(), env.paymentsApi.getPayments().items)
 
         assertEquals(1, env.backend.refreshCalls)
         assertEquals(2, env.backend.loginCalls)
@@ -181,7 +200,7 @@ class ApiResponseHandlingTest {
         val env = TestEnv(FakeBackend(password = "rotated"))
         env.tokens.save("stale", "stale-refresh")
 
-        assertEquals(401, assertFailsWith<ApiException> { env.paymentsApi.getPayments(50) }.status)
+        assertEquals(401, assertFailsWith<ApiException> { env.paymentsApi.getPayments() }.status)
         assertNull(env.tokens.accessToken)
     }
 }

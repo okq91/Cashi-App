@@ -3,9 +3,6 @@ package com.cashi.app.uitests
 /** Mirrors `com.cashi.app.ui.util.TestTags` in composeApp; exposed on Android as resource ids. */
 object TestTags {
     const val PAYMENTS_SCREEN = "payments_screen"
-    const val SUMMARY_TOTAL = "summary_total"
-    const val SUMMARY_COUNT = "summary_count"
-    const val SUMMARY_USD = "summary_usd"
     const val HISTORY_LIST = "history_list"
     const val HISTORY_EMPTY = "history_empty"
     const val PAYMENT_ITEM = "payment_item"

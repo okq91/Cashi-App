@@ -6,8 +6,8 @@ import com.cashi.app.presentation.payments.PaymentsViewModel
 import com.cashi.app.testing.MainDispatcherExtension
 import org.junit.jupiter.api.extension.ExtendWith
 import org.koin.dsl.koinApplication
-import kotlin.test.Test
-import kotlin.test.assertNotNull
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertNotNull
 
 @ExtendWith(MainDispatcherExtension::class)
 class ModulesTest {

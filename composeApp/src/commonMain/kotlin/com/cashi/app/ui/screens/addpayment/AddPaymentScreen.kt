@@ -5,8 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -30,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +50,7 @@ import com.cashi.app.presentation.addpayment.AddPaymentIntent
 import com.cashi.app.presentation.addpayment.AddPaymentState
 import com.cashi.app.presentation.addpayment.AddPaymentViewModel
 import com.cashi.app.ui.LocalSnackbarHostState
+import com.cashi.app.ui.LocalSnackbarScope
 import com.cashi.app.ui.components.BackButton
 import com.cashi.app.ui.components.CashiIcons
 import com.cashi.app.ui.components.CashiTextField
@@ -62,23 +59,25 @@ import com.cashi.app.ui.components.PrimaryButton
 import com.cashi.app.ui.components.inputFrame
 import com.cashi.app.ui.theme.CashiColors
 import com.cashi.app.ui.theme.CashiText
+import com.cashi.app.ui.theme.CashiTheme
 import com.cashi.app.ui.util.CollectEffects
 import com.cashi.app.ui.util.TestTags
 import com.cashi.app.ui.util.testTagsAsResourceIds
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AddPaymentScreen(onBack: () -> Unit, viewModel: AddPaymentViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = LocalSnackbarHostState.current
-    // The snackbar must outlive this screen, so it is shown from a scope that survives navigation.
-    val appScope = rememberCoroutineScope()
+    // The snackbar must outlive this screen, so it is shown from the app-level scope.
+    val snackbarScope = LocalSnackbarScope.current
     CollectEffects(viewModel.effects) { effect ->
         when (effect) {
             is AddPaymentEffect.PaymentSent -> {
                 onBack()
-                appScope.launch { snackbar.showSnackbar(effect.message) }
+                snackbarScope.launch { snackbar.showSnackbar(effect.message) }
             }
             is AddPaymentEffect.ShowError -> snackbar.showSnackbar(effect.message)
             AddPaymentEffect.NavigateBack -> onBack()
@@ -185,7 +184,7 @@ private fun AmountCard(state: AddPaymentState, onIntent: (AddPaymentIntent) -> U
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text("Amount", style = CashiText.Label.copy(color = CashiColors.TextMuted, fontSize = 13.sp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BasicTextField(
                 value = state.amount,
                 onValueChange = { onIntent(AddPaymentIntent.AmountChanged(it)) },
@@ -194,7 +193,7 @@ private fun AmountCard(state: AddPaymentState, onIntent: (AddPaymentIntent) -> U
                 cursorBrush = SolidColor(CashiColors.Accent),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { onNext() }),
-                modifier = Modifier.width(IntrinsicSize.Min).widthIn(min = 48.dp, max = 220.dp).testTag(TestTags.AMOUNT_INPUT),
+                modifier = Modifier.weight(1f).testTag(TestTags.AMOUNT_INPUT),
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.Center) {
                         if (state.amount.isEmpty()) Text("0.00", style = amountStyle.copy(color = CashiColors.Placeholder))
@@ -253,3 +252,50 @@ private fun CurrencyPicker(
 }
 
 private fun label(currency: Currency) = "${currency.code} — ${currency.displayName}"
+
+private val previewFilled = AddPaymentState(
+    recipientEmail = "ahmad@gmail.com",
+    amount = "1500.50",
+    currency = Currency.EGP,
+    description = "Rent",
+)
+
+@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Composable
+private fun AddPaymentEmptyPreview() = CashiTheme { AddPaymentContent(AddPaymentState(), onIntent = {}) }
+
+@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Composable
+private fun AddPaymentFilledPreview() = CashiTheme { AddPaymentContent(previewFilled, onIntent = {}) }
+
+@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Composable
+private fun AddPaymentErrorsPreview() = CashiTheme {
+    AddPaymentContent(
+        AddPaymentState(
+            recipientEmail = "ahmad",
+            submitAttempted = true,
+            errors = mapOf(
+                PaymentField.RECIPIENT_EMAIL to "Enter a valid email address",
+                PaymentField.AMOUNT to "Amount must be greater than zero",
+            ),
+        ),
+        onIntent = {},
+    )
+}
+
+@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Composable
+private fun AddPaymentSendingPreview() = CashiTheme { AddPaymentContent(previewFilled.copy(isSending = true), onIntent = {}) }
+
+@Preview(showBackground = true)
+@Composable
+private fun AmountCardPreview() = CashiTheme {
+    Box(Modifier.padding(16.dp)) { AmountCard(previewFilled, onIntent = {}, onNext = {}) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CurrencyPickerPreview() = CashiTheme {
+    Box(Modifier.padding(16.dp)) { CurrencyPicker(Currency.EUR, Currency.entries, isError = false, onSelect = {}) }
+}

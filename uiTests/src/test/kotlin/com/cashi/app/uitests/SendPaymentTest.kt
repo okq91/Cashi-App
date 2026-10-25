@@ -11,7 +11,7 @@ class SendPaymentTest : AppiumTestBase() {
     @Test
     @DisplayName("a valid payment is sent and shows up at the top of the history")
     fun sendsPayment() {
-        val recipient = uniqueEmail("appium.send")
+        val recipient = uniqueEmail("test")
         val payments = PaymentsPage(driver).waitUntilLoaded()
 
         val form = payments.openAddPayment()
@@ -35,7 +35,8 @@ class SendPaymentTest : AppiumTestBase() {
     @DisplayName("an invalid form shows errors and sends nothing")
     fun rejectsInvalidPayment() {
         val payments = PaymentsPage(driver).waitUntilLoaded()
-        val topBefore = payments.firstRow()
+        // The history may be empty on a fresh backend, so compare "no row" as well.
+        val topBefore = payments.rows().firstOrNull()
 
         val form = payments.openAddPayment()
             .enterRecipient("ahmad@")
@@ -47,6 +48,6 @@ class SendPaymentTest : AppiumTestBase() {
         assertTrue(form.isShown(TestTags.ADD_PAYMENT_SCREEN), "The form should stay open")
 
         val history = form.back().waitUntilLoaded()
-        assertEquals(topBefore, history.firstRow())
+        assertEquals(topBefore, history.rows().firstOrNull())
     }
 }

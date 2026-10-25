@@ -49,10 +49,10 @@ class PaymentFormatter(
     /** "450.00" */
     fun amount(amount: Amount): String = amount.toDisplayString()
 
-    /** "$320.00" for USD, "JD 42.75" for JOD, "12.00 EUR" for anything else. */
-    fun amountWithSymbol(amount: Amount, currencyCode: String): String = when (Currency.fromCode(currencyCode)) {
-        Currency.USD -> "$" + amount.toDisplayString()
-        Currency.JOD -> "JD " + amount.toDisplayString()
+    /** "$320.00" for USD, "JD 42.75" for JOD, "AED 5.00" for AED, "12.00 CHF" for unsupported codes. */
+    fun amountWithSymbol(amount: Amount, currencyCode: String): String = when (val currency = Currency.fromCode(currencyCode)) {
+        Currency.USD, Currency.EUR, Currency.EGP -> currency.symbol + amount.toDisplayString()
+        Currency.JOD, Currency.AED -> currency.symbol + " " + amount.toDisplayString()
         null -> amount.toDisplayString() + " " + currencyCode
     }
 

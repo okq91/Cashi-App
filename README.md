@@ -14,7 +14,7 @@ silently with a demo account. You can then send a payment by email and browse yo
 | DI | Koin |
 | Storage | multiplatform-settings (SharedPreferences / NSUserDefaults) |
 | Dates | kotlinx-datetime |
-| Unit tests | JUnit 5 + kotlin.test + Ktor `MockEngine` |
+| Unit tests | JUnit 5 + Mockito (mockito-kotlin) + Ktor `MockEngine` |
 | BDD | Cucumber (JUnit Platform) |
 | UI tests | Appium (UiAutomator2) + JUnit 5 |
 
@@ -54,12 +54,18 @@ one-shot `Effect`s (navigation, snackbars) delivered through a channel. The view
 | Call | Used by |
 | --- | --- |
 | `POST /api/payments` `{amount, currency, recipientEmail, description}` | New payment screen |
-| `GET /api/payments?limit=50` | History screen (newest first) |
+| `GET /api/payments?cursor=<nextCursor>` → `{items, nextCursor}` | History screen (newest first, paged) |
+
+The history uses Paging 3 (`androidx.paging`, multiplatform): `PaymentsPagingSource` follows the server's
+`nextCursor` (the server picks the page size), `PaymentsRepositoryImpl` exposes the `Pager` flow, and the
+Payments screen reads it with `collectAsLazyPagingItems()`, so the next page loads as the list scrolls, with
+loading, error and retry rows. A new payment invalidates the source, which reloads from the top.
+The "Sent this month" card is computed from the pages loaded so far.
 
 Amounts are stored as cents (`Amount`) and sent as a JSON number with two decimals (`30.00`).
 Before sending, `PaymentValidator` checks the recipient email (required, valid, at most 254 chars),
 the amount (required, numeric, greater than 0, at most 2 decimals, at most 12 integer digits),
-the currency (JOD or USD) and the description (at most 80 chars). Validation errors returned by the
+the currency (JOD, USD, EUR, AED or EGP) and the description (at most 80 chars). Validation errors returned by the
 backend (`{status, message, errors}`) are shown on the matching field.
 
 ## Requirements
@@ -102,13 +108,16 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug 
 ./gradlew :shared:jvmTest
 ```
 
-This runs both suites on the JUnit Platform. Neither needs the backend: the real client,
-repositories and use cases talk to an in-memory fake of cashi-api served through Ktor's `MockEngine`
-(`shared/src/jvmTest/.../testing/FakeBackend.kt`).
+This runs both suites on the JUnit Platform. Neither needs the backend.
 
-- **Unit tests** (`*Test.kt`): amount parsing and serialization, payment validation, API error
-  parsing, API response handling (decoding, request bodies and headers, 4xx/5xx, malformed JSON,
-  offline, token refresh, re-login), repositories, use cases, view models, formatter, Koin graph.
+- **Unit tests** (`*Test.kt`): JUnit 5 with Mockito. The repository, use case and view model tests
+  mock their direct dependency (`PaymentsApi`, `PaymentsRepository`, `AuthRepository`, the use
+  cases), so each layer is tested in isolation. Pure logic (amount parsing and serialization,
+  payment validation, API error parsing, formatter, Koin graph) needs no mocks.
+- **Integration-style tests**: `ApiResponseHandlingTest` and the BDD suite run the real client,
+  repositories and use cases against an in-memory fake of cashi-api served through Ktor's
+  `MockEngine` (`shared/src/jvmTest/.../testing/FakeBackend.kt`). They cover decoding, request
+  bodies and headers, 4xx/5xx, malformed JSON, offline, token refresh and re-login.
 - **BDD** (`src/jvmTest/resources/features`): `payment_creation.feature` and
   `transaction_history.feature`, with step definitions in `bdd/PaymentSteps.kt` and the runner in
   `bdd/CucumberTest.kt`.
@@ -123,8 +132,7 @@ Reports: `shared/build/reports/tests/jvmTest/index.html`.
   snackbar and that the payment is at the top of the history. Also checks that an invalid form shows
   field errors and sends nothing.
 - `TransactionHistoryTest`: creates payments through the backend API, pulls to refresh and checks
-  that they are listed newest first with description, recipient, date, amount and status. Also checks
-  the monthly summary.
+  that they are listed newest first with description, recipient, date, amount and status.
 
 Elements are found by Compose test tags, which are exposed as Android resource ids
 (`testTagsAsResourceId`). For example: `add_payment_button`, `recipient_email_input`, `amount_input`,

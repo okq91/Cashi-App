@@ -21,11 +21,19 @@ Feature: Transaction history
     When the user opens the transaction history
     Then the transaction history is empty
 
-  Scenario: Only the latest 50 payments are loaded
-    Given the backend has 60 payments
+  Scenario: Only the first page is loaded until the user scrolls
+    Given the backend has 45 payments
+    And the backend returns 20 payments per page
     When the user opens the transaction history
-    Then the history shows 50 payments
-    And the backend was asked for at most 50 payments
+    Then the history shows 20 payments
+    And the history was requested 1 time
+
+  Scenario: Scrolling to the end loads the remaining pages
+    Given the backend has 45 payments
+    And the backend returns 20 payments per page
+    When the user scrolls to the end of the history
+    Then the history shows 45 payments
+    And the history requested the pages "first, c20, c40"
 
   Scenario: A payment that was just sent appears at the top
     Given the backend has these payments:

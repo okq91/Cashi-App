@@ -5,9 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.cashi.app.ui.theme.CashiColors
 import com.cashi.app.ui.theme.CashiText
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** The mockup's yellow 56dp call-to-action. */
 @Composable
@@ -75,4 +78,21 @@ fun BackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     ) {
         Icon(CashiIcons.Back, contentDescription = "Back to payments", tint = CashiColors.TextPrimary, modifier = Modifier.size(20.dp))
     }
+}
+
+@Preview
+@Composable
+private fun PrimaryButtonPreview() {
+    Column(Modifier.background(CashiColors.Background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PrimaryButton("Send", onClick = {}, trailingIcon = CashiIcons.Send)
+        PrimaryButton("Add payment", onClick = {}, leadingIcon = CashiIcons.Plus)
+        PrimaryButton("Send", onClick = {}, enabled = false)
+        PrimaryButton("Send", onClick = {}, isLoading = true)
+    }
+}
+
+@Preview
+@Composable
+private fun BackButtonPreview() {
+    Box(Modifier.background(CashiColors.Background).padding(16.dp)) { BackButton(onClick = {}) }
 }

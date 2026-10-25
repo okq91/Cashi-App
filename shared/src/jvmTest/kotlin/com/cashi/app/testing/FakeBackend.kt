@@ -15,6 +15,7 @@ import io.ktor.http.headersOf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -43,6 +44,9 @@ class FakeBackend(
     var loginCalls = 0; private set
     var refreshCalls = 0; private set
     var unreachable = false
+
+    /** How many payments one page of `GET /api/payments` holds. */
+    var pageSize = 20
     var now: Instant = Instant.parse("2026-10-22T20:00:00Z")
 
     /** recipient email -> message the backend answers with as a field error. */
@@ -122,9 +126,18 @@ class FakeBackend(
     }
 
     private fun MockRequestHandleScope.listPayments(request: HttpRequestData): HttpResponseData {
-        val limit = request.url.parameters["limit"]?.toIntOrNull() ?: 50
-        val page = payments.sortedByDescending { it.createdAt }.take(limit)
-        return ok(json.encodeToString(page))
+        val sorted = payments.sortedByDescending { it.createdAt }
+        val cursor = request.url.parameters["cursor"]
+        val start = if (cursor == null) 0 else cursor.removePrefix("c").toIntOrNull()
+            ?: return error(HttpStatusCode.BadRequest, "Invalid cursor")
+        val items = sorted.drop(start).take(pageSize)
+        val next = (start + pageSize).takeIf { it < sorted.size }
+        return ok(
+            buildJsonObject {
+                put("items", json.encodeToJsonElement(items))
+                put("nextCursor", next?.let { "c$it" })
+            }.toString(),
+        )
     }
 
     private suspend fun MockRequestHandleScope.createPayment(request: HttpRequestData): HttpResponseData {

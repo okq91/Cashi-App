@@ -33,9 +33,6 @@ class PaymentsPage(driver: AndroidDriver) : Page(driver) {
         }
     }
 
-    fun summaryTotal(): String = find(TestTags.SUMMARY_TOTAL).text
-    fun summaryCount(): String = find(TestTags.SUMMARY_COUNT).text
-    fun summaryUsd(): String = find(TestTags.SUMMARY_USD).text
 
     /** Rows currently on screen. A row cut off at the bottom edge has no readable children and is skipped. */
     fun rows(): List<PaymentRow> = driver.findElements(byTag(TestTags.PAYMENT_ITEM)).mapNotNull { row ->

@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.cashi.app.ui.theme.CashiColors
 import com.cashi.app.ui.theme.CashiText
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** Label above a control, with the field's validation message below it. */
 @Composable
@@ -91,4 +92,27 @@ fun CashiTextField(
             }
         },
     )
+}
+
+@Preview
+@Composable
+private fun LabeledFieldPreview() {
+    Column(Modifier.background(CashiColors.Background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LabeledField("Recipient email", error = null, errorTag = "") {
+            CashiTextField("", {}, placeholder = "name@example.com", testTag = "")
+        }
+        LabeledField("Recipient email", error = "Enter a valid email address", errorTag = "") {
+            CashiTextField("ahmad", {}, placeholder = "name@example.com", testTag = "", isError = true)
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun InputFramePreview() {
+    Column(Modifier.background(CashiColors.Background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(Modifier.inputFrame(isFocused = false, isError = false))
+        Box(Modifier.inputFrame(isFocused = true, isError = false))
+        Box(Modifier.inputFrame(isFocused = false, isError = true))
+    }
 }

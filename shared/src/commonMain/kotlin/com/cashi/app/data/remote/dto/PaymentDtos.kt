@@ -1,7 +1,6 @@
 package com.cashi.app.data.remote.dto
 
 import com.cashi.app.domain.model.Amount
-import com.cashi.app.domain.model.AmountSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -26,6 +25,13 @@ data class PaymentDto(
     val recipientEmail: String,
     val description: String? = null,
     @Serializable(with = IsoInstantSerializer::class) val createdAt: Instant,
+)
+
+/** One page of `GET /api/payments`; [nextCursor] is null on the last page. */
+@Serializable
+data class PaymentsPageDto(
+    val items: List<PaymentDto>,
+    val nextCursor: String? = null,
 )
 
 /** ISO-8601 instants such as `2026-10-22T20:06:25.221845Z`. */

@@ -1,5 +1,6 @@
 package com.cashi.app.core.network
 
+import com.cashi.app.domain.error.ApiException
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -24,7 +25,7 @@ suspend inline fun <reified T> apiCall(json: Json, request: () -> HttpResponse):
     }
     if (!response.status.isSuccess()) {
         val body = runCatching { response.bodyAsText() }.getOrNull()
-        throw ApiException.fromResponse(response.status.value, body, json)
+        throw apiExceptionFrom(response.status.value, body, json)
     }
     return try {
         response.body()

@@ -1,16 +1,18 @@
 package com.cashi.app.bdd
 
-import com.cashi.app.core.network.ApiException
+import com.cashi.app.domain.error.ApiException
 import com.cashi.app.domain.model.Amount
 import com.cashi.app.domain.model.Payment
 import com.cashi.app.domain.usecase.CreatePaymentResult
 import com.cashi.app.domain.validation.PaymentDraft
 import com.cashi.app.domain.validation.PaymentField
 import com.cashi.app.testing.TestEnv
+import androidx.paging.testing.asSnapshot
 import io.cucumber.datatable.DataTable
 import io.cucumber.java.en.Given
 import io.cucumber.java.en.Then
 import io.cucumber.java.en.When
+import io.ktor.http.HttpMethod
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.assertEquals
@@ -28,7 +30,14 @@ class PaymentSteps {
     private var createResult: CreatePaymentResult? = null
     private var historyResult: Result<List<Payment>>? = null
 
-    private val history: List<Payment> get() = env.getHistory.observe().value
+    private var scrolledToEnd = false
+
+    /** What the history screen shows: the first page, plus any pages scrolled in. */
+    private val history: List<Payment>
+        get() {
+            if (historyResult == null) runBlocking { loadHistory() }
+            return historyResult!!.getOrThrow()
+        }
 
     // Session
 
@@ -83,6 +92,11 @@ class PaymentSteps {
         }
     }
 
+    @Given("the backend returns {int} payments per page")
+    fun backendPageSize(size: Int) {
+        env.backend.pageSize = size
+    }
+
     @Given("the backend refuses payments to {string} with {string}")
     fun backendRefuses(email: String, message: String) {
         env.backend.rejectedRecipients[email] = message
@@ -93,6 +107,8 @@ class PaymentSteps {
     @When("the user sends {string} {string} to {string} with description {string}")
     fun sendPayment(amount: String, currency: String, email: String, description: String) = runBlocking {
         createResult = env.createPayment(PaymentDraft(email, amount, currency, description))
+        // An open history reloads itself after a payment is created.
+        if (historyResult != null) loadHistory()
     }
 
     @Then("the payment is accepted")
@@ -128,7 +144,20 @@ class PaymentSteps {
 
     @When("the user opens the transaction history")
     fun openHistory() = runBlocking {
-        historyResult = env.getHistory.refresh()
+        scrolledToEnd = false
+        loadHistory()
+    }
+
+    @When("the user scrolls to the end of the history")
+    fun scrollToEnd() = runBlocking {
+        scrolledToEnd = true
+        loadHistory()
+    }
+
+    private suspend fun loadHistory() {
+        historyResult = runCatching {
+            if (scrolledToEnd) env.getHistory.paged().asSnapshot { appendScrollWhile { true } } else env.getHistory.paged().asSnapshot()
+        }
     }
 
     @Then("the history shows {int} payments")
@@ -163,10 +192,17 @@ class PaymentSteps {
         assertEquals(email, first.recipientEmail)
     }
 
-    @Then("the backend was asked for at most {int} payments")
-    fun askedForAtMost(limit: Int) {
-        val listRequest = env.backend.requests.last { it.url.encodedPath == "/api/payments" }
-        assertTrue(listRequest.url.parameters["limit"]!!.toInt() <= limit)
+    @Then("the history was requested {int} time(s)")
+    fun historyRequests(times: Int) {
+        assertEquals(times, env.backend.requests.count { it.method == HttpMethod.Get && it.url.encodedPath == "/api/payments" })
+    }
+
+    @Then("the history requested the pages {string}")
+    fun historyCursors(cursors: String) {
+        val used = env.backend.requests
+            .filter { it.method == HttpMethod.Get && it.url.encodedPath == "/api/payments" }
+            .map { it.url.parameters["cursor"] ?: "first" }
+        assertEquals(cursors.split(",").map { it.trim() }, used)
     }
 
     @Then("loading the history fails with a network error")

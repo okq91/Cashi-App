@@ -2,15 +2,15 @@ package com.cashi.app.domain
 
 import com.cashi.app.data.remote.dto.PaymentRequestDto
 import com.cashi.app.domain.model.Amount
-import com.cashi.app.domain.model.AmountSerializer
+import com.cashi.app.data.remote.dto.AmountSerializer
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 
 class AmountTest {
 

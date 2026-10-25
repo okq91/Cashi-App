@@ -36,17 +36,11 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui.tooling.preview)
-            implementation(libs.compose.components.resources)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.androidx.navigation.compose)
-            implementation(libs.koin.compose)
+            implementation(libs.androidx.paging.compose)
             implementation(libs.koin.compose.viewmodel)
-            implementation(libs.koin.compose.viewmodel.navigation)
-        }
-        androidMain.dependencies {
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.koin.android)
         }
     }
 }
@@ -54,10 +48,4 @@ kotlin {
 dependencies {
     // Preview rendering in Android Studio needs ui-tooling (ComposeViewAdapter) at runtime only.
     androidRuntimeClasspath(libs.compose.ui.tooling)
-}
-
-compose.resources {
-    publicResClass = false
-    packageOfResClass = "com.cashi.app.resources"
-    generateResClass = always
 }

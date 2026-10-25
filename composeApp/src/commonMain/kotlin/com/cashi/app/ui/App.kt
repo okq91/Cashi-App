@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,19 +28,24 @@ import com.cashi.app.ui.screens.splash.SplashScreen
 import com.cashi.app.ui.theme.CashiColors
 import com.cashi.app.ui.theme.CashiTheme
 import com.cashi.app.ui.util.TestTags
+import kotlinx.coroutines.CoroutineScope
 import org.koin.compose.viewmodel.koinViewModel
 
 /** App-wide snackbar, so a message can outlive the screen that sent it (e.g. "Payment sent"). */
 val LocalSnackbarHostState = staticCompositionLocalOf<SnackbarHostState> { error("SnackbarHostState not provided") }
 
+/** Scope tied to [App], not to a screen, so a snackbar launched from it is not cancelled when that screen leaves. */
+val LocalSnackbarScope = staticCompositionLocalOf<CoroutineScope> { error("Snackbar scope not provided") }
+
 @Composable
 fun App(modifier: Modifier = Modifier) {
     CashiTheme {
         val snackbarHostState = remember { SnackbarHostState() }
+        val snackbarScope = rememberCoroutineScope()
         val appViewModel = koinViewModel<AppViewModel>()
         val state by appViewModel.state.collectAsStateWithLifecycle()
 
-        CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
+        CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState, LocalSnackbarScope provides snackbarScope) {
             Box(modifier.fillMaxSize().background(CashiColors.Background)) {
                 if (state.isSignedIn) {
                     AppNavHost(rememberNavController())

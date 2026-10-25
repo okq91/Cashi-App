@@ -34,7 +34,7 @@ fun createApiClient(
     json: Json,
     tokens: TokenStorage,
     baseUrl: String = AppConfig.baseUrl,
-    credentials: Credentials = Credentials.Default,
+    credentials: Credentials = AppConfig.demoCredentials,
 ): HttpClient = HttpClient(engine) {
     install(ContentNegotiation) { json(json) }
     install(HttpTimeout) {
